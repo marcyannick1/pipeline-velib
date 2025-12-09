@@ -296,16 +296,17 @@ class VelibAPIFetcher:
         
         return stats
     
-    def run_continuous(self, interval=60):
+    def run_continuous(self, interval=60, use_mongodb=True):
         """
         Exécute la récupération en continu
         
         Args:
             interval: Intervalle en secondes entre chaque récupération (défaut: 60s)
+            use_mongodb: Activer/désactiver la connexion MongoDB
         """
         logger.info(f"🚀 Démarrage de la récupération continue (intervalle: {interval}s)")
         
-        if not self.connect_mongodb():
+        if use_mongodb and not self.connect_mongodb():
             logger.warning("Exécution sans sauvegarde MongoDB")
         
         try:
@@ -327,6 +328,7 @@ def main():
     mongo_uri = os.getenv('MONGO_URI', 'mongodb://mongo:27017/')
     db_name = os.getenv('MONGO_DB', 'velib_db')
     interval = int(os.getenv('FETCH_INTERVAL', '60'))
+    use_mongodb = os.getenv('USE_MONGODB', 'true').lower() == 'true'
     
     # Mode d'exécution
     mode = os.getenv('MODE', 'continuous')  # 'continuous' ou 'once'
@@ -335,7 +337,7 @@ def main():
     
     if mode == 'once':
         logger.info("Mode: Récupération unique")
-        if not fetcher.connect_mongodb():
+        if use_mongodb and not fetcher.connect_mongodb():
             logger.warning("Exécution sans MongoDB")
         stats = fetcher.fetch_and_save()
         if fetcher.client:
@@ -343,7 +345,7 @@ def main():
         return stats
     else:
         logger.info("Mode: Récupération continue")
-        fetcher.run_continuous(interval)
+        fetcher.run_continuous(interval, use_mongodb)
 
 
 if __name__ == "__main__":
