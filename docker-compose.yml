@@ -1,1 +1,220 @@
-#a remplir
+# version: "3.9"
+
+services:
+
+  ############################################################
+  # HADOOP HDFS CLUSTER
+  ############################################################
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    env_file: ./hadoop.env
+    environment:
+      - CLUSTER_NAME=velib
+    ports:
+      - "9870:9870"
+      - "19000:9000"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    networks:
+      - hadoop
+
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    restart: always
+    env_file: ./hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    ports:
+      - "9864:9864"
+    volumes:
+      - datanode1_data:/hadoop/dfs/data
+    networks:
+      - hadoop
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    restart: always
+    env_file: ./hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    ports:
+      - "9865:9864"
+    volumes:
+      - datanode2_data:/hadoop/dfs/data
+    networks:
+      - hadoop
+
+  ############################################################
+  # YARN CLUSTER
+  ############################################################
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    env_file: ./hadoop.env
+    ports:
+      - "8088:8088"
+    networks:
+      - hadoop
+
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager1
+    restart: always
+    env_file: ./hadoop.env
+    ports:
+      - "8042:8042"
+    networks:
+      - hadoop
+
+  nodemanager2:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager2
+    restart: always
+    env_file: ./hadoop.env
+    ports:
+      - "8043:8042"
+    networks:
+      - hadoop
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: always
+    env_file: ./hadoop.env
+    ports:
+      - "8188:8188"
+    volumes:
+      - history_data:/hadoop/yarn/timeline
+    networks:
+      - hadoop
+
+  ############################################################
+  # SPARK CLUSTER
+  ############################################################
+  spark-master:
+    image: bde2020/spark-master:3.2.1-hadoop3.2
+    container_name: spark-master
+    restart: always
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - hadoop
+    volumes:
+      - ./ingestion:/app/ingestion   # Scripts PySpark batch + streaming
+
+  spark-worker1:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker1
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - hadoop
+
+  spark-worker2:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker2
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - hadoop
+
+  spark-worker3:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker3
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - hadoop
+
+  ############################################################
+  # JUPYTER NOTEBOOK (PySpark)
+  ############################################################
+  jupyter:
+    image: jupyter/pyspark-notebook
+    container_name: jupyter
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./ingestion:/home/jovyan/work
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - hadoop
+
+  ############################################################
+  # MONGO
+  ############################################################
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo:/docker-entrypoint-initdb.d  # scripts init
+    networks:
+      - hadoop
+
+  ############################################################
+  # BACKEND FASTAPI
+  ############################################################
+  api:
+    build: ./back
+    container_name: backend
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    networks:
+      - hadoop
+
+  ############################################################
+  # FRONTEND REACT
+  ############################################################
+  front:
+    build: ./front
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+    networks:
+      - hadoop
+
+############################################################
+# VOLUMES
+############################################################
+volumes:
+  namenode_data:
+  datanode1_data:
+  datanode2_data:
+  history_data:
+  mongo_data:
+
+############################################################
+# NETWORK
+############################################################
+networks:
+  hadoop:
+    driver: bridge
