@@ -1,1 +1,73 @@
-#a remplir
+version: '3.8'
+
+services:
+  # MongoDB - Base de données pour stocker les données Vélib
+  mongo:
+    image: mongo:latest
+    container_name: velib-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: velib_db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - velib-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Node.js - API REST pour servir les données
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: velib-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongo:27017/velib_db
+      - NODE_ENV=production
+    volumes:
+      - ./back:/app
+      - /app/node_modules
+    networks:
+      - velib-network
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: npm run dev
+
+  # Ingestion Python - Récupération des données temps réel
+  ingestion:
+    build:
+      context: ./ingestion
+      dockerfile: Dockerfile
+    container_name: velib-ingestion
+    restart: always
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/velib_db
+      - USE_MONGODB=true
+      - MODE=continuous
+      - FETCH_INTERVAL=60
+    volumes:
+      - ./ingestion:/app
+    networks:
+      - velib-network
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: python script/fetch_velib_api.py
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  velib-network:
+    driver: bridge
