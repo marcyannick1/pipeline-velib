@@ -120,6 +120,26 @@ services:
     networks:
       - velib-net
 
+# =========================
+  # BACKEND API
+  # =========================
+  backend:
+    build: ./back
+    container_name: velib-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongodb:27017/velib_kpi_batch
+    networks:
+      - velib-net
+    volumes:
+      - ./back:/app
+      - /app/node_modules
+
   velib-ingestion:
     build: ./ingestion
     container_name: velib-ingestion
