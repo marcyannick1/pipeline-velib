@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Installer les dépendances Python
+RUN pip install --no-cache-dir flask flask-cors pymongo
+
+# Copier le code
+COPY api_kpi.py .
+
+# Exposer le port
+EXPOSE 5001
+
+# Lancer l'API Flask
+CMD ["python", "api_kpi.py"]
