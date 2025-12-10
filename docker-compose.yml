@@ -3,6 +3,7 @@ services:
   # HDFS - Hadoop
   # =========================
   namenode:
+#    platform: linux/amd64
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     restart: always
@@ -13,11 +14,12 @@ services:
       - hadoop_namenode:/hadoop/dfs/name
     environment:
       - CLUSTER_NAME=velib-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     networks:
       - velib-net
 
   datanode1:
-    platform: linux/amd64
+#    platform: linux/amd64
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode1
     restart: always
@@ -34,7 +36,7 @@ services:
       - velib-net
 
   datanode2:
-    platform: linux/amd64
+#    platform: linux/amd64
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode2
     restart: always
@@ -44,14 +46,14 @@ services:
       - CLUSTER_NAME=velib-cluster
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     volumes:
-      - hadoop_datanode1:/hadoop/dfs/data
+      - hadoop_datanode2:/hadoop/dfs/data
     depends_on:
       - namenode
     networks:
       - velib-net
 
   datanode3:
-    platform: linux/amd64
+#    platform: linux/amd64
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode3
     restart: always
@@ -61,7 +63,7 @@ services:
       - CLUSTER_NAME=velib-cluster
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     volumes:
-      - hadoop_datanode1:/hadoop/dfs/data
+      - hadoop_datanode3:/hadoop/dfs/data
     depends_on:
       - namenode
     networks:
@@ -71,7 +73,7 @@ services:
   # SPARK
   # =========================
   spark-master:
-    platform: linux/amd64
+#    platform: linux/amd64
     image: bde2020/spark-master:3.3.0-hadoop3.3
     container_name: spark-master
     environment:
@@ -139,6 +141,17 @@ services:
       - MONGO_INITDB_DATABASE=velibdb
     networks:
       - velib-net
+
+  velib-ingestion:
+    build: ./ingestion
+    container_name: velib-ingestion
+    depends_on:
+      - namenode
+    networks:
+      - velib-net
+    environment:
+      - HDFS_URL=http://namenode:9870
+      - FETCH_INTERVAL=60
 
 networks:
   velib-net:
