@@ -6,4 +6,4 @@ COPY . /app
 
 RUN pip install requests hdfs
 
-CMD ["python3", "fetch_velib_api.py"]
+CMD ["python3", "script/fetch_velib_api.py"]
