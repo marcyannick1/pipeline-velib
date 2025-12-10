@@ -150,29 +150,23 @@ services:
       retries: 5
 
   # =========================
-  # BACKEND Node.js - API REST
+  # API PYTHON - Liaison MongoDB -> Power BI
   # =========================
-  backend:
+  api-kpi:
     build:
       context: ./back
-      dockerfile: Dockerfile
-    container_name: velib-backend
+      dockerfile: Dockerfile.python
+    container_name: velib-api-kpi
     restart: always
     ports:
-      - "4000:4000"
+      - "5001:5001"
     environment:
-      - PORT=4000
-      - MONGO_URI=mongodb://mongodb:27017/velibdb
-      - NODE_ENV=production
-    volumes:
-      - ./back:/app
-      - /app/node_modules
+      - MONGO_URI=mongodb://mongodb:27017/
     networks:
       - velib-net
     depends_on:
       mongodb:
         condition: service_healthy
-    command: npm run dev
 
   # =========================
   # INGESTION - Récupération API + HDFS
