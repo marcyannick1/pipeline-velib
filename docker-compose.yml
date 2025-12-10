@@ -1,26 +1,157 @@
 version: '3.8'
 
 services:
-  # MongoDB - Base de données pour stocker les données Vélib
-  mongo:
-    image: mongo:latest
-    container_name: velib-mongodb
+  # =========================
+  # HDFS - Hadoop
+  # =========================
+  namenode:
+#    platform: linux/amd64
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=velib-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks:
+      - velib-net
+
+  datanode1:
+#    platform: linux/amd64
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    restart: always
+    ports:
+      - "9864:9864"
+    environment:
+      - CLUSTER_NAME=velib-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - velib-net
+
+  datanode2:
+#    platform: linux/amd64
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    restart: always
+    ports:
+      - "9865:9864"
+    environment:
+      - CLUSTER_NAME=velib-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - velib-net
+
+  datanode3:
+#    platform: linux/amd64
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode3
+    restart: always
+    ports:
+      - "9866:9864"
+    environment:
+      - CLUSTER_NAME=velib-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - hadoop_datanode3:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - velib-net
+
+  # =========================
+  # SPARK
+  # =========================
+  spark-master:
+#    platform: linux/amd64
+    image: bde2020/spark-master:3.3.0-hadoop3.3
+    container_name: spark-master
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - velib-net
+    depends_on:
+      - namenode
+
+  spark-worker1:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker1
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - velib-net
+
+  spark-worker2:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker2
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - velib-net
+
+  spark-worker3:
+    image: bde2020/spark-worker:3.2.1-hadoop3.2
+    container_name: spark-worker3
+    restart: always
+    ports:
+      - "8083:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - velib-net
+
+  # =========================
+  # MONGODB
+  # =========================
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
     restart: always
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: velib_db
     volumes:
       - mongo_data:/data/db
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+    environment:
+      - MONGO_INITDB_DATABASE=velibdb
     networks:
-      - velib-network
+      - velib-net
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Backend Node.js - API REST pour servir les données
+  # =========================
+  # BACKEND Node.js - API REST
+  # =========================
   backend:
     build:
       context: ./back
@@ -31,43 +162,42 @@ services:
       - "4000:4000"
     environment:
       - PORT=4000
-      - MONGO_URI=mongodb://mongo:27017/velib_db
+      - MONGO_URI=mongodb://mongodb:27017/velibdb
       - NODE_ENV=production
     volumes:
       - ./back:/app
       - /app/node_modules
     networks:
-      - velib-network
+      - velib-net
     depends_on:
-      mongo:
+      mongodb:
         condition: service_healthy
     command: npm run dev
 
-  # Ingestion Python - Récupération des données temps réel
-  ingestion:
-    build:
-      context: ./ingestion
-      dockerfile: Dockerfile
+  # =========================
+  # INGESTION - Récupération API + HDFS
+  # =========================
+  velib-ingestion:
+    build: ./ingestion
     container_name: velib-ingestion
-    restart: always
-    environment:
-      - MONGO_URI=mongodb://mongo:27017/velib_db
-      - USE_MONGODB=true
-      - MODE=continuous
-      - FETCH_INTERVAL=60
-    volumes:
-      - ./ingestion:/app
-    networks:
-      - velib-network
     depends_on:
-      mongo:
-        condition: service_healthy
-    command: python script/fetch_velib_api.py
-
-volumes:
-  mongo_data:
-    driver: local
+      - namenode
+      - mongodb
+    networks:
+      - velib-net
+    environment:
+      - HDFS_URL=http://namenode:9870
+      - FETCH_INTERVAL=60
+      - MONGO_URI=mongodb://mongodb:27017/velibdb
+      - USE_MONGODB=true
 
 networks:
-  velib-network:
+  velib-net:
     driver: bridge
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode1:
+  hadoop_datanode2:
+  hadoop_datanode3:
+  mongo_data:
