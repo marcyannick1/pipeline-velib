@@ -7,6 +7,7 @@ import { connectDB } from "./config/db.js";
 import stationsRouter from "./routes/stations.js";
 import statsRouter from "./routes/stats.js";
 import errorHandler from "./utils/errorHandler.js";
+import realtimeRouter from "./routes/realtime.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => res.send("Velib backend ✅"));
 
 app.use("/api/stations", stationsRouter);
 app.use("/api/stats", statsRouter);
+app.use("/api/realtime", realtimeRouter);
 
 // Error handler (last)
 app.use(errorHandler);

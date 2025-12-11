@@ -37,7 +37,6 @@ df_clean = df.select(
     col("ebikes").cast(IntegerType()),
     col("is_renting").cast(IntegerType()),
     col("is_returning").cast(IntegerType()),
-    col("nom_arrondissement_communes"),
     to_timestamp("timestamp").alias("timestamp")
 )
 

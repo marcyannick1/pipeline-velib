@@ -1,55 +1,43 @@
 import express from "express";
-import DailyRate from "../models/DailyRate.js";
-import Arrondissement from "../models/Arrondissement.js";
-import HourlyAvgBikes from "../models/HourlyAvgBikes.js";
-import HourlyRate from "../models/HourlyRate.js";
-import StationEmptyFull from "../models/StationEmptyFull.js";
+import {
+  getArrondissementAvgBikes,
+  getArrondissementEmpty,
+  getArrondissementFull,
+  getArrondissementRate,
+  getDailyRate,
+  getHourlyAvgBikes,
+  getHourlyRate,
+  getStationList,
+  getStationListById
+} from "../controllers/statsController.js";
 
 const router = express.Router();
 
-router.get("/daily-rate", async (req, res) => {
-  try {
-    const data = await DailyRate.find();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// GET /api/stats/arrondissement-avg-bikes
+router.get("/arrondissement-avg-bikes", getArrondissementAvgBikes);
 
-router.get("/arrondissement", async (req, res) => {
-  try {
-    const data = await Arrondissement.find();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// GET /api/stats/arrondissement-empty
+router.get("/arrondissement-empty", getArrondissementEmpty);
 
-router.get("/hourly-avg-bikes", async (req, res) => {
-  try {
-    const data = await HourlyAvgBikes.find();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// GET /api/stats/arrondissement-full
+router.get("/arrondissement-full", getArrondissementFull);
 
-router.get("/hourly-rate", async (req, res) => {
-  try {
-    const data = await HourlyRate.find();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// GET /api/stats/arrondissement-rate
+router.get("/arrondissement-rate", getArrondissementRate);
 
-router.get("/station-empty-full", async (req, res) => {
-  try {
-    const data = await StationEmptyFull.find();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// GET /api/stats/daily-rate
+router.get("/daily-rate", getDailyRate);
+
+// GET /api/stats/hourly-avg-bikes
+router.get("/hourly-avg-bikes", getHourlyAvgBikes);
+
+// GET /api/stats/hourly-rate
+router.get("/hourly-rate", getHourlyRate);
+
+// GET /api/stats/station-list
+router.get("/station-list", getStationList);
+
+// GET /api/stats/station-list/:id
+router.get("/station-list/:id", getStationListById);
 
 export default router;

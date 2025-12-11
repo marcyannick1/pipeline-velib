@@ -37,9 +37,9 @@ kpi_avg_hour = df.groupBy("hour").agg(
 )
 
 # =============================
-# KPI 3 — Disponibilité par arrondissement
+# KPI 3 — Disponibilité par station
 # =============================
-kpi_arr = df.groupBy("nom_arrondissement_communes").agg(
+kpi_arr = df.groupBy("station_id", "name").agg(
     avg("num_bikes_available").alias("avg_bikes")
 )
 
