@@ -168,6 +168,25 @@ services:
       - HDFS_URL=http://namenode:9870
       - FETCH_INTERVAL=60
 
+  # =========================
+  # FRONTEND
+  # =========================
+  frontend:
+    build: ./front
+    container_name: velib-frontend
+    restart: always
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:4000/api
+    networks:
+      - velib-net
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+
 networks:
   velib-net:
 

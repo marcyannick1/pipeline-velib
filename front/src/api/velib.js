@@ -2,7 +2,11 @@
 import axios from "axios";
 
 // Default backend port is 4000 in this project
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:4000/api";
+// In browser, use Vite env (import.meta.env); fallback to REACT_APP_* or localhost
+const BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
+  process?.env?.REACT_APP_BACKEND_URL ||
+  "http://localhost:4000/api";
 
 /**
  * Vélib API client
@@ -114,7 +118,7 @@ export const fetchStationsEmpty = async () => {
   return res.data;
 };
 
-// Alias pour compatibilité avec pages existantes
+// Aliases pour compatibilité avec les pages existantes
 export const fetchGlobalStats = async () => {
   const res = await axios.get(`${BASE_URL}/realtime/totals`);
   return res.data;
