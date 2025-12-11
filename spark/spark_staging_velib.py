@@ -18,8 +18,8 @@ STAGING_PATH = "hdfs://namenode:9000/velib/staging/"
 print("📥 Lecture des fichiers JSON depuis RAW...")
 df = spark.read.json(RAW_PATH)
 
-print("📄 Schema détecté :")
-df.printSchema()
+# print("📄 Schema détecté :")
+# df.printSchema()
 
 # =======================================
 # NORMALISATION DES TYPES
@@ -38,11 +38,12 @@ df_clean = df.select(
     col("is_renting").cast(IntegerType()),
     col("is_returning").cast(IntegerType()),
     col("nom_arrondissement_communes"),
+    col("code_insee_commune"),
     to_timestamp("timestamp").alias("timestamp")
 )
 
 print("🧹 Données normalisées (STAGING) :")
-df_clean.show(5)
+# df_clean.show(5)
 
 # =======================================
 # ECRITURE EN PARQUET (STAGING)

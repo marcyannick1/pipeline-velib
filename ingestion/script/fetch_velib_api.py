@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 class VelibAPIFetcher:
     # API data.gouv.fr
     VELIB_REALTIME_URL = "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/velib-disponibilite-en-temps-reel/exports/json"
-    VELIB_API_URL = "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/velib-disponibilite-en-temps-reel/records"
 
     def __init__(self, hdfs_url="http://namenode:9870", hdfs_dir="/velib/raw/"):
         self.hdfs_url = hdfs_url
@@ -72,7 +71,6 @@ class VelibAPIFetcher:
                 # Géolocalisation
                 "latitude": coords.get("lat") if isinstance(coords, dict) else None,
                 "longitude": coords.get("lon") if isinstance(coords, dict) else None,
-                "coordonnees_geo": coords,
 
                 # Disponibilité
                 "capacity": station.get("capacity"),
@@ -92,7 +90,6 @@ class VelibAPIFetcher:
 
                 # Timestamps
                 "duedate": station.get("duedate"),
-                "fetch_timestamp": station.get("fetch_timestamp"),
                 "timestamp": datetime.utcnow().isoformat(),
             })
 
