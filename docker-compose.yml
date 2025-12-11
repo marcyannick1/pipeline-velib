@@ -127,7 +127,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # =========================
+# =========================
   # BACKEND API
   # =========================
   backend:
@@ -147,9 +147,6 @@ services:
       - ./back:/app
       - /app/node_modules
 
-  # =========================
-  # INGESTION - Récupération API + HDFS
-  # =========================
   velib-ingestion:
     build: ./ingestion
     container_name: velib-ingestion
