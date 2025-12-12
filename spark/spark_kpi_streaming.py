@@ -95,6 +95,24 @@ def process_realtime_kpi(batch_df, batch_id):
     )
 
     # ============================
+    # KPI — LISTE COMPLÈTE DES STATIONS (TEMPS RÉEL)
+    # ============================
+    stations_realtime = latest.select(
+        col("station_id"),
+        col("name"),
+        col("latitude"),
+        col("longitude"),
+        col("capacity"),
+        col("num_bikes_available"),
+        col("mechanical_bikes"),
+        col("ebikes"),
+        col("num_docks_available"),
+        (col("num_bikes_available") / col("capacity")).alias("occupation_rate"),
+        col("nom_arrondissement_communes"),
+        col("ts").alias("timestamp")
+    )
+
+    # ============================
     # TOPS
     # ============================
     top_full = latest.orderBy(desc("num_bikes_available")).limit(10)
@@ -131,6 +149,7 @@ def process_realtime_kpi(batch_df, batch_id):
     write_to_mongo(stations_closed, "stations_closed")
     write_to_mongo(stations_full, "stations_full")
     write_to_mongo(stations_empty, "stations_empty")
+    write_to_mongo(stations_realtime, "stations_realtime")
 
 # ============================
 # START STREAMING
