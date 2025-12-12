@@ -48,12 +48,24 @@ const SortIcon = ({ columnKey, sortConfig }) => {
 // Status badge helper
 const getStatusBadge = (status) => {
     const config = {
-        available: { label: 'Disponible', class: 'status-available' },
-        low: { label: 'Stock bas', class: 'status-low' },
-        empty: { label: 'Vide', class: 'status-empty' },
-        full: { label: 'Pleine', class: 'status-full' }
+        available: { 
+            label: 'Disponible', 
+            className: 'bg-green-500 hover:bg-green-600 text-white border-green-600' 
+        },
+        low: { 
+            label: 'Stock bas', 
+            className: 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' 
+        },
+        empty: { 
+            label: 'Vide', 
+            className: 'bg-red-500 hover:bg-red-600 text-white border-red-600' 
+        },
+        full: { 
+            label: 'Pleine', 
+            className: 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600' 
+        }
     };
-    const { label, class: className } = config[status] || config.available;
+    const { label, className } = config[status] || config.available;
     return <Badge className={className}>{label}</Badge>;
 };
 
