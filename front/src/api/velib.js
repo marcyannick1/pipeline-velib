@@ -2,7 +2,11 @@
 import axios from "axios";
 
 // Default backend port is 4000 in this project
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:4000/api";
+// In browser, use Vite env (import.meta.env); fallback to REACT_APP_* or localhost
+const BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_BACKEND_URL) ||
+  process?.env?.REACT_APP_BACKEND_URL ||
+  "http://localhost:4000/api";
 
 /**
  * Vélib API client
@@ -113,3 +117,30 @@ export const fetchStationsEmpty = async () => {
   const res = await axios.get(`${BASE_URL}/realtime/stations-empty`);
   return res.data;
 };
+
+// Aliases pour compatibilité avec les pages existantes
+export const fetchGlobalStats = async () => {
+  const res = await axios.get(`${BASE_URL}/realtime/totals`);
+  return res.data;
+};
+
+export const fetchHourlyStats = async () => {
+  const res = await axios.get(`${BASE_URL}/stats/hourly-rate`);
+  return res.data;
+};
+
+export const fetchWeeklyStats = async () => {
+  const res = await axios.get(`${BASE_URL}/stats/daily-rate`);
+  return res.data;
+};
+
+export const fetchTop10Stations = async () => {
+  const res = await axios.get(`${BASE_URL}/realtime/top-full`);
+  return res.data;
+};
+
+export const fetchDistrictStats = async () => {
+  const res = await axios.get(`${BASE_URL}/stats/arrondissement-rate`);
+  return res.data;
+};
+
