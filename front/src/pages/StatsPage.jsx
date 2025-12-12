@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { StatsCards } from '../components/StatsCards';
-import { 
-    HourlyUsageChart, 
-    WeeklyTripsChart, 
-    TopStationsChart, 
-    DistrictChart 
+import {
+    HourlyUsageChart,
+    WeeklyTripsChart,
+    TopStationsChart,
+    DistrictChart
 } from '../components/Charts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { 
-    fetchGlobalStats, 
-    fetchHourlyStats, 
+import {
+    fetchGlobalStats,
+    fetchHourlyStats,
     fetchWeeklyStats,
     fetchTop10Stations,
     fetchDistrictStats,
     fetchDistrictAvgBikes,
-    fetchStationList
+    fetchStationList,
+    fetchStationsEmpty,
+    fetchStationsFull
 } from '../api/velib';
-import { 
-    BarChart3, 
-    TrendingUp, 
+import {
+    BarChart3,
+    TrendingUp,
     Activity,
     Clock,
     Map,
@@ -85,17 +87,37 @@ const StatsPage = () => {
             return num <= 1 ? Math.round(num * 100) : Math.round(num);
         };
 
-        const normalizeHourly = (rows = []) =>
-            rows.map((r) => ({
-                hour: r.hour ?? r._id ?? '',
-                usage: toPercent(r.avg_occupation_rate ?? r.usage ?? 0),
-            }));
+        const normalizeHourly = (rows = []) => {
+            if (!Array.isArray(rows) || rows.length === 0) return [];
+            console.log('Raw hourly data:', rows[0]); // Debug: voir la structure
+            return rows.map((r) => {
+                const hourVal = r.hour ?? r._id ?? r.time ?? '';
+                const usageVal = toPercent(
+                    r.avg_occupation_rate ?? 
+                    r.occupation_rate ??
+                    r.usage ?? 
+                    r.avg_usage ??
+                    0
+                );
+                return { hour: hourVal, usage: usageVal };
+            });
+        };
 
-        const normalizeWeekly = (rows = []) =>
-            rows.map((r, idx) => ({
-                day: r.day ?? r.date ?? `Jour ${idx + 1}`,
-                trips: toPercent(r.avg_rate ?? r.trips ?? 0),
-            }));
+        const normalizeWeekly = (rows = []) => {
+            if (!Array.isArray(rows) || rows.length === 0) return [];
+            console.log('Raw weekly data:', rows[0]); // Debug: voir la structure
+            return rows.map((r, idx) => {
+                const dayVal = r.day ?? r.date ?? r._id ?? `Jour ${idx + 1}`;
+                const tripsVal = toPercent(
+                    r.avg_rate ?? 
+                    r.occupation_rate ??
+                    r.rate ??
+                    r.trips ?? 
+                    0
+                );
+                return { day: dayVal, trips: tripsVal };
+            });
+        };
 
         const normalizeTopStations = (rows = [], type = 'saturated') => {
             const items = rows.slice(0, 8).map((s) => {
@@ -171,14 +193,16 @@ const StatsPage = () => {
         const loadData = async () => {
             try {
                 const [
-                    statsData, 
-                    hourlyStats, 
-                    weeklyStats, 
-                    saturated, 
+                    statsData,
+                    hourlyStats,
+                    weeklyStats,
+                    saturated,
                     unused,
                     districtRates,
                     districtAvgBikes,
-                    stationList
+                    stationList,
+                    emptyStationsData,
+                    fullStationsData
                 ] = await Promise.all([
                     fetchGlobalStats(),
                     fetchHourlyStats(),
@@ -187,11 +211,22 @@ const StatsPage = () => {
                     fetchTop10Stations('unused'),
                     fetchDistrictStats(),
                     fetchDistrictAvgBikes(),
-                    fetchStationList()
+                    fetchStationList(),
+                    fetchStationsEmpty(),
+                    fetchStationsFull()
                 ]);
-                setStats(normalizeStats(statsData));
                 const stationCount = stationList?.length || 0;
-                setStats(normalizeStats(statsData, stationCount));
+                const normalizedStats = normalizeStats(statsData, stationCount);
+                
+                // Debug logs
+                console.log('Stats data:', statsData);
+                console.log('Hourly stats (raw):', hourlyStats);
+                console.log('Weekly stats (raw):', weeklyStats);
+                
+                // Update counts dynamiquement depuis les collections
+                normalizedStats.emptyStations = emptyStationsData?.length ?? 0;
+                normalizedStats.fullStations = fullStationsData?.length ?? 0;
+                setStats(normalizedStats);
                 setHourlyData(normalizeHourly(hourlyStats));
                 setWeeklyData(normalizeWeekly(weeklyStats));
                 setTopSaturated(normalizeTopStations(saturated, 'saturated'));
@@ -292,10 +327,10 @@ const StatsPage = () => {
                                                     </span>
                                                 </div>
                                                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div 
+                                                    <div
                                                         className="h-full bg-primary rounded-full transition-all duration-500"
-                                                        style={{ 
-                                                            width: `${stats.totalBikes ? (stats.mechanicalBikes / stats.totalBikes) * 100 : 0}%` 
+                                                        style={{
+                                                            width: `${stats.totalBikes ? (stats.mechanicalBikes / stats.totalBikes) * 100 : 0}%`
                                                         }}
                                                     />
                                                 </div>
@@ -306,10 +341,10 @@ const StatsPage = () => {
                                                     </span>
                                                 </div>
                                                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div 
+                                                    <div
                                                         className="h-full bg-warning rounded-full transition-all duration-500"
-                                                        style={{ 
-                                                            width: `${stats.totalBikes ? (stats.electricBikes / stats.totalBikes) * 100 : 0}%` 
+                                                        style={{
+                                                            width: `${stats.totalBikes ? (stats.electricBikes / stats.totalBikes) * 100 : 0}%`
                                                         }}
                                                     />
                                                 </div>
@@ -332,9 +367,10 @@ const StatsPage = () => {
                                                         <span className="text-sm text-muted-foreground">Actives</span>
                                                     </div>
                                                     <span className="font-semibold text-foreground">
-                                                        {stats.activeStations || '...'}
+                                                        {stats.activeStations || (stats.totalStations - (stats.fullStations || 0)) || '...'}
                                                     </span>
                                                 </div>
+
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <span className="w-3 h-3 rounded-full bg-destructive" />
@@ -344,6 +380,7 @@ const StatsPage = () => {
                                                         {stats.emptyStations || '...'}
                                                     </span>
                                                 </div>
+
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <span className="w-3 h-3 rounded-full bg-chart-2" />
@@ -374,7 +411,7 @@ const StatsPage = () => {
                                                         </span>
                                                     </div>
                                                     <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                        <div 
+                                                        <div
                                                             className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500"
                                                             style={{ width: `${stats.occupancyRate || 0}%` }}
                                                         />
@@ -457,7 +494,7 @@ const StatsPage = () => {
                             >
                                 <div className="grid lg:grid-cols-2 gap-6">
                                     <DistrictChart data={districtData} loading={loading} />
-                                    
+
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
@@ -471,7 +508,7 @@ const StatsPage = () => {
                                         <CardContent>
                                             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
                                                 {districtData.map((district, index) => (
-                                                    <div 
+                                                    <div
                                                         key={district.name}
                                                         className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
                                                     >
