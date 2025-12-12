@@ -139,12 +139,19 @@ export const fetchWeeklyStats = async () => {
   return res.data;
 };
 
-export const fetchTop10Stations = async () => {
-  const res = await axios.get(`${BASE_URL}/realtime/top-full`);
+export const fetchTop10Stations = async (type = "saturated") => {
+  // saturated -> stations pleines ; unused -> stations vides
+  const endpoint = type === "unused" ? "top-empty" : "top-full";
+  const res = await axios.get(`${BASE_URL}/realtime/${endpoint}`);
   return res.data;
 };
 
 export const fetchDistrictStats = async () => {
   const res = await axios.get(`${BASE_URL}/stats/arrondissement-rate`);
+  return res.data;
+};
+
+export const fetchDistrictAvgBikes = async () => {
+  const res = await axios.get(`${BASE_URL}/stats/arrondissement-avg-bikes`);
   return res.data;
 };

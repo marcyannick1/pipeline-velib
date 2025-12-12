@@ -15,7 +15,9 @@ import {
     fetchHourlyStats, 
     fetchWeeklyStats,
     fetchTop10Stations,
-    fetchDistrictStats 
+    fetchDistrictStats,
+    fetchDistrictAvgBikes,
+    fetchStationList
 } from '../api/velib';
 import { 
     BarChart3, 
@@ -68,6 +70,91 @@ const StatsPage = () => {
             };
         };
 
+        const toPercent = (value) => {
+            const num = Number(value ?? 0);
+            if (Number.isNaN(num)) return 0;
+            // Backend peut renvoyer des ratios (0-1) ou des pourcentages (0-100)
+            return num <= 1 ? Math.round(num * 100) : Math.round(num);
+        };
+
+        const normalizeHourly = (rows = []) =>
+            rows.map((r) => ({
+                hour: r.hour ?? r._id ?? '',
+                usage: toPercent(r.avg_occupation_rate ?? r.usage ?? 0),
+            }));
+
+        const normalizeWeekly = (rows = []) =>
+            rows.map((r, idx) => ({
+                day: r.day ?? r.date ?? `Jour ${idx + 1}`,
+                trips: toPercent(r.avg_rate ?? r.trips ?? 0),
+            }));
+
+        const normalizeTopStations = (rows = []) =>
+            rows.slice(0, 8).map((s) => {
+                const name = s.name || s.station_name || s.station || 'Station';
+                const availableBikes = s.availableBikes ?? s.num_bikes_available ?? s.mechanical ?? 0;
+                const availableDocks = s.availableDocks ?? s.num_docks_available ?? (s.capacity ? Math.max(s.capacity - availableBikes, 0) : 0);
+                const occupancyRaw =
+                    s.occupation_rate ??
+                    s.occupancy ??
+                    (availableBikes + availableDocks > 0
+                        ? (availableBikes / (availableBikes + availableDocks)) * 100
+                        : 0);
+                return {
+                    name: name.length > 40 ? `${name.slice(0, 37)}...` : name,
+                    occupancy: toPercent(occupancyRaw),
+                    fullName: name,
+                };
+            });
+
+        const normalizeDistricts = (rateRows = [], bikesRows = [], stationRows = []) => {
+            const normalizeKey = (val = '') => String(val).trim().toLowerCase();
+
+            const bikesMap = new Map();
+            bikesRows.forEach((b) => {
+                const name = b.nom_arrondissement_communes || b.name || b._id || 'Arrondissement';
+                const key = normalizeKey(name);
+                bikesMap.set(key, {
+                    name,
+                    bikes: Number(b.avg_bikes ?? b.bikes ?? 0),
+                });
+            });
+
+            const rateMap = new Map();
+            rateRows.forEach((d) => {
+                const name = d.name || d.nom_arrondissement_communes || d._id || 'Arrondissement';
+                const key = normalizeKey(name);
+                rateMap.set(key, {
+                    name,
+                    occupancy: toPercent(d.avg_occupation_rate ?? d.occupation_rate ?? d.occupancy ?? 0),
+                });
+            });
+
+            const stationCountMap = new Map();
+            stationRows.forEach((s) => {
+                const city = s.city || s.nom_arrondissement_communes || s.name || '';
+                const key = normalizeKey(city);
+                if (!key) return;
+                stationCountMap.set(key, (stationCountMap.get(key) || 0) + 1);
+            });
+
+            const keys = new Set([...bikesMap.keys(), ...rateMap.keys()]);
+
+            return Array.from(keys).map((key) => {
+                const bikesEntry = bikesMap.get(key) || {};
+                const rateEntry = rateMap.get(key) || {};
+                const stations = stationCountMap.get(key);
+                const name = bikesEntry.name || rateEntry.name || 'Arrondissement';
+
+                return {
+                    name,
+                    bikes: bikesEntry.bikes ?? 0,
+                    stations: stations ?? null,
+                    occupancy: rateEntry.occupancy ?? 0,
+                };
+            });
+        };
+
         const loadData = async () => {
             try {
                 const [
@@ -76,21 +163,25 @@ const StatsPage = () => {
                     weeklyStats, 
                     saturated, 
                     unused,
-                    districts
+                    districtRates,
+                    districtAvgBikes,
+                    stationList
                 ] = await Promise.all([
                     fetchGlobalStats(),
                     fetchHourlyStats(),
                     fetchWeeklyStats(),
                     fetchTop10Stations('saturated'),
                     fetchTop10Stations('unused'),
-                    fetchDistrictStats()
+                    fetchDistrictStats(),
+                    fetchDistrictAvgBikes(),
+                    fetchStationList()
                 ]);
                 setStats(normalizeStats(statsData));
-                setHourlyData(hourlyStats);
-                setWeeklyData(weeklyStats);
-                setTopSaturated(saturated);
-                setTopUnused(unused);
-                setDistrictData(districts);
+                setHourlyData(normalizeHourly(hourlyStats));
+                setWeeklyData(normalizeWeekly(weeklyStats));
+                setTopSaturated(normalizeTopStations(saturated));
+                setTopUnused(normalizeTopStations(unused));
+                setDistrictData(normalizeDistricts(districtRates, districtAvgBikes, stationList));
             } catch (error) {
                 console.error('Error loading stats:', error);
             } finally {
@@ -378,16 +469,16 @@ const StatsPage = () => {
                                                                     {district.name}
                                                                 </p>
                                                                 <p className="text-xs text-muted-foreground">
-                                                                    {district.stations} stations
+                                                                    {district.stations ?? '—'} stations
                                                                 </p>
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="font-semibold text-foreground">
-                                                                {district.bikes} vélos
+                                                                {(district.bikes ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} vélos
                                                             </p>
                                                             <p className="text-xs text-muted-foreground">
-                                                                {district.occupancy}% occupé
+                                                                {(district.occupancy ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}% occupé
                                                             </p>
                                                         </div>
                                                     </div>
