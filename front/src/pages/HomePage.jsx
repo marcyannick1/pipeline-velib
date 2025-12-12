@@ -166,7 +166,7 @@ const HomePage = () => {
                             <div className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-border">
                                 <div>
                                     <p className="text-3xl font-display font-bold text-foreground">
-                                        {loading ? '...' : (stats.activeStations ?? stats.totalStations ?? 0).toLocaleString()}
+                                        {loading ? '...' : (stats.activeStations || (stats.totalStations - (stats.fullStations || 0)) || 0).toLocaleString()}
                                     </p>
                                     <p className="text-sm text-muted-foreground">Stations actives</p>
                                 </div>
