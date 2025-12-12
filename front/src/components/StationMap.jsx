@@ -97,6 +97,7 @@ export const StationMap = ({ stations, loading = false, height = '500px', onStat
                         'available');
 
                 return {
+                    _id: s._id || idx,
                     id: s.id || s.station_id || idx,
                     name,
                     address,
@@ -221,7 +222,7 @@ export const StationMap = ({ stations, loading = false, height = '500px', onStat
                         
                         {filteredStations.map((station) => (
                             <Marker
-                                key={station.id}
+                                key={station._id}
                                 position={[station.latitude, station.longitude]}
                                 icon={createMarkerIcon(station.status)}
                             >

@@ -1,4 +1,4 @@
-import RealtimeVelib, { getStreamingCollections } from "../models/RealtimeVelib.js";
+import RealtimeVelib, { getStreamingCollections, normalizeStationData, normalizeRealtimeStationData } from "../models/RealtimeVelib.js";
 
 /**
  * GET /api/realtime/totals
@@ -38,7 +38,7 @@ export const getTopFull = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.topFull.find({}).limit(10).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -52,7 +52,7 @@ export const getTopEmpty = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.topEmpty.find({}).limit(10).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -66,7 +66,7 @@ export const getTopEbikes = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.topEbikes.find({}).limit(10).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -80,7 +80,7 @@ export const getStationsBroken = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.stationsBroken.find({}).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -94,7 +94,7 @@ export const getStationsClosed = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.stationsClosed.find({}).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -108,7 +108,7 @@ export const getStationsFull = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.stationsFull.find({}).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
   } catch (error) {
     next(error);
   }
@@ -122,7 +122,21 @@ export const getStationsEmpty = async (req, res, next) => {
   try {
     const collections = await getStreamingCollections();
     const stations = await collections.stationsEmpty.find({}).toArray();
-    res.json(stations);
+    res.json(stations.map(normalizeStationData));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/realtime/stations
+ * Toutes les stations en temps réel avec données d'occupation
+ */
+export const getRealtimeStations = async (req, res, next) => {
+  try {
+    const collections = await getStreamingCollections();
+    const stations = await collections.stationsRealtime.find({}).toArray();
+    res.json(stations.map(normalizeRealtimeStationData));
   } catch (error) {
     next(error);
   }

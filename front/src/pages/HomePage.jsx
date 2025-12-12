@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { 
-    fetchStations, 
+    fetchRealtimeStations, 
     fetchGlobalStats, 
     fetchHourlyStats,
     fetchTop10Stations 
@@ -64,7 +64,7 @@ const HomePage = () => {
         const loadData = async () => {
             try {
                 const [stationsData, statsData, hourlyStats, top10] = await Promise.all([
-                    fetchStations(),
+                    fetchRealtimeStations(),
                     fetchGlobalStats(),
                     fetchHourlyStats(),
                     fetchTop10Stations('saturated')

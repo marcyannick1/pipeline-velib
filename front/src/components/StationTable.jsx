@@ -84,6 +84,7 @@ export const StationTable = ({ stations, loading = false }) => {
                     'available');
 
             return {
+                _id: s._id || idx,
                 id: s.id || s.station_id || idx,
                 name,
                 address,
@@ -254,7 +255,7 @@ export const StationTable = ({ stations, loading = false }) => {
                             <AnimatePresence mode="popLayout">
                                 {paginatedStations.map((station, index) => (
                                     <motion.tr
-                                        key={station.id}
+                                        key={station._id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
