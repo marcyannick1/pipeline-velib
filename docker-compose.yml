@@ -68,9 +68,9 @@ services:
       - namenode
     networks:
       - velib-net
-
-
-
+  # =========================
+  # SPARK
+  # =========================
   spark-master:
     image: bde2020/spark-master:3.3.0-hadoop3.3
     container_name: spark-master
@@ -126,6 +126,26 @@ services:
     networks:
       - velib-net
 
+  spark-streaming-job:
+    image: bde2020/spark-worker:3.3.0-hadoop3.3
+    container_name: spark-streaming-job
+    volumes:
+      - ./spark:/opt/spark-apps
+    depends_on:
+      - spark-master
+      - mongodb
+    command: >
+      /bin/bash -c "
+      echo '⏳ Waiting for Spark Master...';
+      sleep 15;
+      /spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0
+      /opt/spark-apps/spark_kpi_streaming.py
+      "
+    networks:
+      - velib-net
+
   # =========================
   # MONGODB
   # =========================
@@ -143,6 +163,26 @@ services:
     networks:
       - velib-net
 
+  # =========================
+  # BACKEND API
+  # =========================
+  backend:
+    build: ./back
+    container_name: velib-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongodb:27017/velib_kpi_batch
+    networks:
+      - velib-net
+    volumes:
+      - ./back:/app
+      - /app/node_modules
+
   velib-ingestion:
     build: ./ingestion
     container_name: velib-ingestion
@@ -153,6 +193,25 @@ services:
     environment:
       - HDFS_URL=http://namenode:9870
       - FETCH_INTERVAL=60
+
+  # =========================
+  # FRONTEND
+  # =========================
+  frontend:
+    build: ./front
+    container_name: velib-frontend
+    restart: always
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:4000/api
+    networks:
+      - velib-net
+    volumes:
+      - ./front:/app
+      - /app/node_modules
 
 networks:
   velib-net:

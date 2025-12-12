@@ -61,7 +61,6 @@ def process_realtime_kpi(batch_df, batch_id):
     if batch_df.isEmpty():
         return
 
-    # 🔑 1️⃣ Dernier état par station
     latest = (
         batch_df
         .withColumn("ts", to_timestamp("timestamp"))
@@ -161,5 +160,5 @@ query = (
     .start()
 )
 
-print("⚡ Streaming Vélib corrigé — KPI temps réel cohérents → MongoDB")
+print("⚡ Streaming Vélib — KPI → MongoDB")
 spark.streams.awaitAnyTermination()
