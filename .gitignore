@@ -1,1 +1,4 @@
 /velib
+/ingestion/.venv
+front/node_modules
+.idea
