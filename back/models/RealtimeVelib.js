@@ -16,7 +16,7 @@ const RealtimeVelibSchema = new mongoose.Schema({
   last_update: { type: Date, default: Date.now, index: true },
   raw: { type: mongoose.Schema.Types.Mixed }
 }, {
-  collection: "realtime_velib",
+  collection: "velib_kpi_streaming",
   timestamps: true
 });
 

@@ -31,8 +31,15 @@ const HomePage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const normalizeStats = (raw = {}) => {
-            const totalStations = Number(raw.total_stations ?? raw.totalStations ?? 0);
+        const normalizeStats = (raw = {}, fallbackStationCount = 0) => {
+            const activeStations = Number(raw.active_stations ?? raw.activeStations ?? fallbackStationCount ?? 0);
+            const totalStations = Number(
+                raw.total_stations ??
+                raw.totalStations ??
+                fallbackStationCount ??
+                activeStations ??
+                0
+            );
             const totalBikes = Number(raw.total_bikes ?? raw.totalBikes ?? 0);
             const totalDocks = Number(raw.total_docks ?? raw.totalDocks ?? 0);
             const electricBikes = Number(raw.total_ebike ?? raw.electricBikes ?? 0);
@@ -57,8 +64,32 @@ const HomePage = () => {
                 avgTripDuration,
                 emptyStations,
                 fullStations,
+                activeStations,
                 occupancyRate,
             };
+        };
+
+        const normalizeTopStations = (rows = [], type = 'saturated') => {
+            const items = rows.slice(0, 8).map((s) => {
+                const name = s.name || s.station_name || s.station || 'Station';
+                const availableBikes = s.availableBikes ?? s.num_bikes_available ?? s.mechanical ?? 0;
+                const availableDocks = s.availableDocks ?? s.num_docks_available ?? (s.capacity ? Math.max(s.capacity - availableBikes, 0) : 0);
+                const occupancyRaw =
+                    s.occupation_rate ??
+                    s.occupancy ??
+                    (availableBikes + availableDocks > 0
+                        ? (availableBikes / (availableBikes + availableDocks)) * 100
+                        : 0);
+                return {
+                    name: name.length > 40 ? `${name.slice(0, 37)}...` : name,
+                    occupancy: occupancyRaw,
+                    fullName: name,
+                };
+            });
+
+            return items.sort((a, b) => {
+                return type === 'unused' ? a.occupancy - b.occupancy : b.occupancy - a.occupancy;
+            });
         };
 
         const loadData = async () => {
@@ -70,9 +101,9 @@ const HomePage = () => {
                     fetchTop10Stations('saturated')
                 ]);
                 setStations(stationsData);
-                setStats(normalizeStats(statsData));
+                setStats(normalizeStats(statsData, stationsData?.length || 0));
                 setHourlyData(hourlyStats);
-                setTopStations(top10);
+                setTopStations(normalizeTopStations(top10, 'saturated'));
             } catch (error) {
                 console.error('Error loading data:', error);
             } finally {
@@ -135,7 +166,7 @@ const HomePage = () => {
                             <div className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-border">
                                 <div>
                                     <p className="text-3xl font-display font-bold text-foreground">
-                                        {loading ? '...' : stats.totalStations?.toLocaleString()}
+                                        {loading ? '...' : (stats.activeStations ?? stats.totalStations ?? 0).toLocaleString()}
                                     </p>
                                     <p className="text-sm text-muted-foreground">Stations actives</p>
                                 </div>

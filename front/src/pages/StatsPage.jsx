@@ -40,8 +40,15 @@ const StatsPage = () => {
     const [activeTab, setActiveTab] = useState('overview');
 
     useEffect(() => {
-        const normalizeStats = (raw = {}) => {
-            const totalStations = Number(raw.total_stations ?? raw.totalStations ?? 0);
+        const normalizeStats = (raw = {}, fallbackStationCount = 0) => {
+            const activeStations = Number(raw.active_stations ?? raw.activeStations ?? fallbackStationCount ?? 0);
+            const totalStations = Number(
+                raw.total_stations ??
+                raw.totalStations ??
+                fallbackStationCount ??
+                activeStations ??
+                0
+            );
             const totalBikes = Number(raw.total_bikes ?? raw.totalBikes ?? 0);
             const totalDocks = Number(raw.total_docks ?? raw.totalDocks ?? 0);
             const electricBikes = Number(raw.total_ebike ?? raw.electricBikes ?? 0);
@@ -66,6 +73,7 @@ const StatsPage = () => {
                 avgTripDuration,
                 emptyStations,
                 fullStations,
+                activeStations,
                 occupancyRate,
             };
         };
@@ -89,8 +97,8 @@ const StatsPage = () => {
                 trips: toPercent(r.avg_rate ?? r.trips ?? 0),
             }));
 
-        const normalizeTopStations = (rows = []) =>
-            rows.slice(0, 8).map((s) => {
+        const normalizeTopStations = (rows = [], type = 'saturated') => {
+            const items = rows.slice(0, 8).map((s) => {
                 const name = s.name || s.station_name || s.station || 'Station';
                 const availableBikes = s.availableBikes ?? s.num_bikes_available ?? s.mechanical ?? 0;
                 const availableDocks = s.availableDocks ?? s.num_docks_available ?? (s.capacity ? Math.max(s.capacity - availableBikes, 0) : 0);
@@ -106,6 +114,11 @@ const StatsPage = () => {
                     fullName: name,
                 };
             });
+
+            return items.sort((a, b) => {
+                return type === 'unused' ? a.occupancy - b.occupancy : b.occupancy - a.occupancy;
+            });
+        };
 
         const normalizeDistricts = (rateRows = [], bikesRows = [], stationRows = []) => {
             const normalizeKey = (val = '') => String(val).trim().toLowerCase();
@@ -177,10 +190,12 @@ const StatsPage = () => {
                     fetchStationList()
                 ]);
                 setStats(normalizeStats(statsData));
+                const stationCount = stationList?.length || 0;
+                setStats(normalizeStats(statsData, stationCount));
                 setHourlyData(normalizeHourly(hourlyStats));
                 setWeeklyData(normalizeWeekly(weeklyStats));
-                setTopSaturated(normalizeTopStations(saturated));
-                setTopUnused(normalizeTopStations(unused));
+                setTopSaturated(normalizeTopStations(saturated, 'saturated'));
+                setTopUnused(normalizeTopStations(unused, 'unused'));
                 setDistrictData(normalizeDistricts(districtRates, districtAvgBikes, stationList));
             } catch (error) {
                 console.error('Error loading stats:', error);
