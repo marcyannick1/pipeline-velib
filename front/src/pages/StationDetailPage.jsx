@@ -9,7 +9,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { StationHistoryChart, StationWeeklyChart } from '../components/Charts';
-import { fetchStationById } from '../api/velib';
+import { fetchRealtimeStations } from '../api/velib';
 import {
     ArrowLeft,
     Bike,
@@ -69,14 +69,66 @@ const StationDetailPage = () => {
 
     const loadStation = async () => {
         try {
-            const data = await fetchStationById(id);
-            setStation(data);
+            const allStations = await fetchRealtimeStations();
+            const foundStation = allStations.find(s => 
+                String(s.id || s.station_id || s.stationcode) === String(id) ||
+                String(s._id) === String(id)
+            );
+            
+            if (foundStation) {
+                // Normaliser les données pour correspondre au format attendu
+                const normalized = {
+                    id: foundStation.id || foundStation.station_id || foundStation.stationcode,
+                    _id: foundStation._id,
+                    name: foundStation.name || foundStation.station_name || 'Station sans nom',
+                    address: foundStation.address || foundStation.nom_arrondissement_communes || '',
+                    district: foundStation.district || foundStation.nom_arrondissement_communes || '',
+                    status: foundStation.status || 'available',
+                    availableBikes: foundStation.availableBikes ?? foundStation.num_bikes_available ?? foundStation.mechanical ?? 0,
+                    mechanicalBikes: foundStation.mechanicalBikes ?? foundStation.mechanical_bikes ?? foundStation.mechanical ?? 0,
+                    electricBikes: foundStation.electricBikes ?? foundStation.ebikes ?? foundStation.ebike ?? 0,
+                    availableDocks: foundStation.availableDocks ?? foundStation.num_docks_available ?? 0,
+                    capacity: foundStation.capacity ?? foundStation.capacity ?? 0,
+                    latitude: foundStation.latitude ?? foundStation.lat ?? 48.8566,
+                    longitude: foundStation.longitude ?? foundStation.lon ?? foundStation.lng ?? 2.3522,
+                    lastUpdate: foundStation.lastUpdate || foundStation.last_update || new Date().toISOString(),
+                    // Données de graphiques (mockées pour l'instant car non disponibles en temps réel)
+                    history: foundStation.history || generateMockHistory(),
+                    weeklyUsage: foundStation.weeklyUsage || generateMockWeeklyUsage()
+                };
+                setStation(normalized);
+            } else {
+                setStation(null);
+            }
         } catch (error) {
             console.error('Error loading station:', error);
+            setStation(null);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    // Fonction pour générer des données mockées d'historique
+    const generateMockHistory = () => {
+        const now = new Date();
+        return Array.from({ length: 24 }, (_, i) => {
+            const time = new Date(now - (23 - i) * 60 * 60 * 1000);
+            return {
+                time: time.toISOString(),
+                available: Math.floor(Math.random() * 20) + 5,
+                docks: Math.floor(Math.random() * 10) + 5
+            };
+        });
+    };
+
+    // Fonction pour générer des données mockées hebdomadaires
+    const generateMockWeeklyUsage = () => {
+        const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        return days.map(day => ({
+            day,
+            usage: Math.floor(Math.random() * 100) + 50
+        }));
     };
 
     useEffect(() => {
@@ -90,10 +142,26 @@ const StationDetailPage = () => {
 
     const getStatusConfig = (status) => {
         const configs = {
-            available: { label: 'Disponible', class: 'status-available', color: 'success' },
-            low: { label: 'Stock bas', class: 'status-low', color: 'warning' },
-            empty: { label: 'Vide', class: 'status-empty', color: 'destructive' },
-            full: { label: 'Pleine', class: 'status-full', color: 'default' }
+            available: { 
+                label: 'Disponible', 
+                class: 'bg-green-500 hover:bg-green-600 text-white border-green-600', 
+                color: 'success' 
+            },
+            low: { 
+                label: 'Stock bas', 
+                class: 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600', 
+                color: 'warning' 
+            },
+            empty: { 
+                label: 'Vide', 
+                class: 'bg-red-500 hover:bg-red-600 text-white border-red-600', 
+                color: 'destructive' 
+            },
+            full: { 
+                label: 'Pleine', 
+                class: 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600', 
+                color: 'default' 
+            }
         };
         return configs[status] || configs.available;
     };
@@ -139,7 +207,9 @@ const StationDetailPage = () => {
     }
 
     const statusConfig = getStatusConfig(station.status);
-    const occupancyRate = Math.round((station.availableBikes / station.capacity) * 100);
+    const occupancyRate = station.capacity > 0 
+        ? Math.round((station.availableBikes / station.capacity) * 100) 
+        : 0;
 
     return (
         <div className="min-h-screen pt-20 pb-12">
@@ -248,7 +318,12 @@ const StationDetailPage = () => {
                                         </p>
                                         <p className="text-sm text-muted-foreground">Vélos électriques</p>
                                         <div className="mt-3">
-                                            <Progress value={(station.electricBikes / station.availableBikes) * 100} className="h-1.5" />
+                                            <Progress 
+                                                value={station.availableBikes > 0 
+                                                    ? (station.electricBikes / station.availableBikes) * 100 
+                                                    : 0} 
+                                                className="h-1.5" 
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>

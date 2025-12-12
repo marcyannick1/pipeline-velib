@@ -7,6 +7,14 @@ module.exports = {
     ],
     theme: {
         extend: {
+            colors: {
+                success: '#22c55e',
+                warning: '#f59e0b',
+                info: '#0ea5e9'
+            },
+            boxShadow: {
+                glow: '0 10px 40px -10px rgba(34, 197, 94, 0.35)'
+            },
             fontFamily: {
                 sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
                 display: ['Space Grotesk', 'sans-serif'],
