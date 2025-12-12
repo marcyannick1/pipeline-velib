@@ -7,6 +7,8 @@ import DailyRate from "../models/DailyRate.js";
 import HourlyAvgBikes from "../models/HourlyAvgBikes.js";
 import HourlyRate from "../models/HourlyRate.js";
 import StationList from "../models/StationList.js";
+import StationEmptyFull from "../models/StationEmptyFull.js";
+import mongoose from "mongoose";
 
 /**
  * GET /api/stats/top10
@@ -126,6 +128,24 @@ export const getStationListById = async (req, res, next) => {
       return res.status(404).json({ message: "Station not found" });
     }
     res.json(station);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStationEmptyFull = async (req, res, next) => {
+  try {
+    const data = await StationEmptyFull.find();
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getArrondissement = async (req, res, next) => {
+  try {
+    const data = await mongoose.connection.db.collection('arrondissement').find().toArray();
+    res.json(data);
   } catch (error) {
     next(error);
   }
