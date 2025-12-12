@@ -1,0 +1,9 @@
+Index: hadoop.env
+===================================================================
+diff --git a/hadoop.env b/hadoop.env
+deleted file mode 100644
+--- a/hadoop.env	(revision 1aadf2a344749995a8536de8920a95253af6a5f2)
++++ /dev/null	(revision 1aadf2a344749995a8536de8920a95253af6a5f2)
+@@ -1,1 +0,0 @@
+-#a remplir
+\ No newline at end of file
