@@ -1,9 +1,15 @@
-FROM python:3.10
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY . /app
+# Copier les requirements
+COPY requirements.txt .
 
-RUN pip install requests hdfs
+# Installer les dépendances (requests, hdfs, pymongo, etc.)
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3", "script/fetch_velib_api.py"]
+# Copier le reste du code
+COPY . .
+
+# Commande de démarrage
+CMD ["python", "script/fetch_velib_api.py"]

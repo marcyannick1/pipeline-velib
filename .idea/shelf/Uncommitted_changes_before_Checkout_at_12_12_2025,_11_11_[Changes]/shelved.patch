@@ -1,0 +1,94 @@
+Index: docker-compose.yml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>services:\n  # =========================\n  # HDFS - Hadoop\n  # =========================\n  namenode:\n    #    platform: linux/amd64\n    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8\n    container_name: namenode\n    restart: always\n    ports:\n      - \"9870:9870\"\n      - \"9000:9000\"\n    volumes:\n      - hadoop_namenode:/hadoop/dfs/name\n    environment:\n      - CLUSTER_NAME=velib-cluster\n      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000\n    networks:\n      - velib-net\n\n  datanode1:\n    #    platform: linux/amd64\n    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8\n    container_name: datanode1\n    restart: always\n    ports:\n      - \"9864:9864\"\n    environment:\n      - CLUSTER_NAME=velib-cluster\n      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000\n    volumes:\n      - hadoop_datanode1:/hadoop/dfs/data\n    depends_on:\n      - namenode\n    networks:\n      - velib-net\n\n  datanode2:\n    #    platform: linux/amd64\n    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8\n    container_name: datanode2\n    restart: always\n    ports:\n      - \"9865:9864\"\n    environment:\n      - CLUSTER_NAME=velib-cluster\n      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000\n    volumes:\n      - hadoop_datanode2:/hadoop/dfs/data\n    depends_on:\n      - namenode\n    networks:\n      - velib-net\n\n  datanode3:\n    #    platform: linux/amd64\n    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8\n    container_name: datanode3\n    restart: always\n    ports:\n      - \"9866:9864\"\n    environment:\n      - CLUSTER_NAME=velib-cluster\n      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000\n    volumes:\n      - hadoop_datanode3:/hadoop/dfs/data\n    depends_on:\n      - namenode\n    networks:\n      - velib-net\n\n\n\n  spark-master:\n    image: bde2020/spark-master:3.3.0-hadoop3.3\n    container_name: spark-master\n    volumes:\n      - ./spark:/opt/spark-apps\n    ports:\n      - \"8080:8080\"\n      - \"7077:7077\"\n    environment:\n      - INIT_DAEMON_STEP=setup_spark\n    networks:\n      - velib-net\n\n  spark-worker-1:\n    image: bde2020/spark-worker:3.3.0-hadoop3.3\n    container_name: spark-worker-1\n    depends_on:\n      - spark-master\n    ports:\n      - \"8081:8081\"\n    environment:\n      - \"SPARK_MASTER=spark://spark-master:7077\"\n      - \"SPARK_WORKER_MEMORY=2G\"\n      - \"SPARK_WORKER_CORES=2\"\n    networks:\n      - velib-net\n\n  spark-worker-2:\n    image: bde2020/spark-worker:3.3.0-hadoop3.3\n    container_name: spark-worker-2\n    depends_on:\n      - spark-master\n    ports:\n      - \"8082:8081\"\n    environment:\n      - \"SPARK_MASTER=spark://spark-master:7077\"\n      - \"SPARK_WORKER_MEMORY=2G\"\n      - \"SPARK_WORKER_CORES=2\"\n    networks:\n      - velib-net\n\n  spark-worker-3:\n    image: bde2020/spark-worker:3.3.0-hadoop3.3\n    container_name: spark-worker-3\n    depends_on:\n      - spark-master\n    ports:\n      - \"8083:8081\"\n    environment:\n      - \"SPARK_MASTER=spark://spark-master:7077\"\n      - \"SPARK_WORKER_MEMORY=2G\"\n      - \"SPARK_WORKER_CORES=2\"\n    networks:\n      - velib-net\n\n  # =========================\n  # MONGODB\n  # =========================\n  mongodb:\n    image: mongo:7\n    container_name: mongodb\n    restart: always\n    ports:\n      - \"27017:27017\"\n    volumes:\n      - mongo_data:/data/db\n      - ./mongodb/init:/docker-entrypoint-initdb.d\n    environment:\n      - MONGO_INITDB_DATABASE=velibdb\n    networks:\n      - velib-net\n\n# =========================\n  # BACKEND API\n  # =========================\n  backend:\n    build: ./back\n    container_name: velib-backend\n    restart: always\n    ports:\n      - \"4000:4000\"\n    depends_on:\n      - mongodb\n    environment:\n      - PORT=4000\n      - MONGO_URI=mongodb://mongodb:27017/velib_kpi_batch\n    networks:\n      - velib-net\n    volumes:\n      - ./back:/app\n      - /app/node_modules\n\n  velib-ingestion:\n    build: ./ingestion\n    container_name: velib-ingestion\n    depends_on:\n      - namenode\n    networks:\n      - velib-net\n    environment:\n      - HDFS_URL=http://namenode:9870\n      - FETCH_INTERVAL=60\n\n  # =========================\n  # FRONTEND\n  # =========================\n  frontend:\n    build: ./front\n    container_name: velib-frontend\n    restart: always\n    ports:\n      - \"5174:5173\"\n    depends_on:\n      - backend\n    environment:\n      - REACT_APP_BACKEND_URL=http://backend:4000/api\n    networks:\n      - velib-net\n    volumes:\n      - ./front:/app\n      - /app/node_modules\n\nnetworks:\n  velib-net:\n\nvolumes:\n  hadoop_namenode:\n  hadoop_datanode1:\n  hadoop_datanode2:\n  hadoop_datanode3:\n  mongo_data:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/docker-compose.yml b/docker-compose.yml
+--- a/docker-compose.yml	(revision fb4356418b1983573e9915925d9c6163bdba5e56)
++++ b/docker-compose.yml	(date 1765533426890)
+@@ -68,9 +68,9 @@
+       - namenode
+     networks:
+       - velib-net
+-
+-
+-
++  # =========================
++  # SPARK
++  # =========================
+   spark-master:
+     image: bde2020/spark-master:3.3.0-hadoop3.3
+     container_name: spark-master
+@@ -125,6 +125,26 @@
+       - "SPARK_WORKER_CORES=2"
+     networks:
+       - velib-net
++
++  spark-streaming-job:
++    image: bde2020/spark-worker:3.3.0-hadoop3.3
++    container_name: spark-streaming-job
++    volumes:
++      - ./spark:/opt/spark-apps
++    depends_on:
++      - spark-master
++      - mongodb
++    command: >
++      /bin/bash -c "
++      echo '⏳ Waiting for Spark Master...';
++      sleep 15;
++      /spark/bin/spark-submit
++      --master spark://spark-master:7077
++      --packages org.mongodb.spark:mongo-spark-connector_2.12:10.5.0
++      /opt/spark-apps/spark_kpi_streaming.py
++      "
++    networks:
++      - velib-net
+ 
+   # =========================
+   # MONGODB
+@@ -143,7 +163,7 @@
+     networks:
+       - velib-net
+ 
+-# =========================
++  # =========================
+   # BACKEND API
+   # =========================
+   backend:
+Index: hadoop.env
+===================================================================
+diff --git a/hadoop.env b/hadoop.env
+deleted file mode 100644
+--- a/hadoop.env	(revision fb4356418b1983573e9915925d9c6163bdba5e56)
++++ /dev/null	(revision fb4356418b1983573e9915925d9c6163bdba5e56)
+@@ -1,1 +0,0 @@
+-#a remplir
+\ No newline at end of file
+Index: spark/spark_kpi_streaming.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from pyspark.sql import SparkSession\nfrom pyspark.sql.functions import *\nfrom pyspark.sql.types import *\n\n# ============================\n# SPARK SESSION\n# ============================\nspark = SparkSession.builder \\\n    .appName(\"VelibStreamingKPI\") \\\n    .master(\"spark://spark-master:7077\") \\\n    .getOrCreate()\n\nspark.sparkContext.setLogLevel(\"WARN\")\n\nRAW = \"hdfs://namenode:9000/velib/raw/\"\n\n# ============================\n# SCHEMA\n# ============================\nschema = StructType([\n    StructField(\"station_id\", StringType()),\n    StructField(\"name\", StringType()),\n    StructField(\"latitude\", DoubleType()),\n    StructField(\"longitude\", DoubleType()),\n    StructField(\"capacity\", IntegerType()),\n    StructField(\"num_bikes_available\", IntegerType()),\n    StructField(\"num_docks_available\", IntegerType()),\n    StructField(\"mechanical_bikes\", IntegerType()),\n    StructField(\"ebikes\", IntegerType()),\n    StructField(\"is_installed\", StringType()),\n    StructField(\"is_renting\", StringType()),\n    StructField(\"is_returning\", StringType()),\n    StructField(\"nom_arrondissement_communes\", StringType()),\n    StructField(\"code_insee_commune\", StringType()),\n    StructField(\"fetch_timestamp\", StringType()),\n    StructField(\"timestamp\", StringType())\n])\n\n# ============================\n# READ STREAM\n# ============================\ndf = spark.readStream.schema(schema).json(RAW)\n\n# ============================\n# WRITE TO MONGO (GENERIC)\n# ============================\ndef write_to_mongo(df, collection):\n    df.write \\\n        .format(\"mongodb\") \\\n        .mode(\"overwrite\") \\\n        .option(\"spark.mongodb.connection.uri\", \"mongodb://mongodb:27017/velib_kpi_streaming\") \\\n        .option(\"spark.mongodb.database\", \"velib_kpi_streaming\") \\\n        .option(\"spark.mongodb.collection\", collection) \\\n        .save()\n\n# =====================================================\n# FOREACHBATCH — KPI TEMPS RÉEL (ÉTAT ACTUEL)\n# =====================================================\ndef process_realtime_kpi(batch_df, batch_id):\n\n    if batch_df.isEmpty():\n        return\n\n    # \uD83D\uDD11 1\uFE0F⃣ Dernier état par station\n    latest = (\n        batch_df\n        .withColumn(\"ts\", to_timestamp(\"timestamp\"))\n        .groupBy(\"station_id\")\n        .agg(\n            max(\"ts\").alias(\"ts\"),\n            first(\"name\").alias(\"name\"),\n            first(\"latitude\").alias(\"latitude\"),\n            first(\"longitude\").alias(\"longitude\"),\n            first(\"capacity\").alias(\"capacity\"),\n            first(\"num_bikes_available\").alias(\"num_bikes_available\"),\n            first(\"num_docks_available\").alias(\"num_docks_available\"),\n            first(\"mechanical_bikes\").alias(\"mechanical_bikes\"),\n            first(\"ebikes\").alias(\"ebikes\"),\n            first(\"is_installed\").alias(\"is_installed\"),\n            first(\"is_renting\").alias(\"is_renting\"),\n            first(\"is_returning\").alias(\"is_returning\"),\n            first(\"nom_arrondissement_communes\").alias(\"nom_arrondissement_communes\")\n        )\n    )\n\n    # ============================\n    # KPI GLOBAUX\n    # ============================\n    kpi_totals = latest.groupBy().agg(\n        sum(\"num_bikes_available\").alias(\"bikes_available\"),\n        sum(\"mechanical_bikes\").alias(\"mechanical_available\"),\n        sum(\"ebikes\").alias(\"ebikes_available\"),\n        sum(\"num_docks_available\").alias(\"free_slots\"),\n        (sum(\"num_bikes_available\") / sum(\"capacity\")).alias(\"occupation_rate\")\n    )\n\n    # ============================\n    # KPI — LISTE COMPLÈTE DES STATIONS (TEMPS RÉEL)\n    # ============================\n    stations_realtime = latest.select(\n        col(\"station_id\"),\n        col(\"name\"),\n        col(\"latitude\"),\n        col(\"longitude\"),\n        col(\"capacity\"),\n        col(\"num_bikes_available\"),\n        col(\"mechanical_bikes\"),\n        col(\"ebikes\"),\n        col(\"num_docks_available\"),\n        (col(\"num_bikes_available\") / col(\"capacity\")).alias(\"occupation_rate\"),\n        col(\"nom_arrondissement_communes\"),\n        col(\"ts\").alias(\"timestamp\")\n    )\n\n    # ============================\n    # TOPS\n    # ============================\n    top_full = latest.orderBy(desc(\"num_bikes_available\")).limit(10)\n    top_empty = latest.orderBy(asc(\"num_bikes_available\")).limit(10)\n    top_ebikes = latest.orderBy(desc(\"ebikes\")).limit(10)\n\n    # ============================\n    # STATUTS\n    # ============================\n    stations_broken = latest.filter(\n        (col(\"is_renting\") != \"OUI\") | (col(\"is_returning\") != \"OUI\")\n    )\n\n    stations_closed = latest.filter(\n        (col(\"is_installed\") != \"OUI\") | (col(\"capacity\") == 0)\n    )\n\n    stations_full = latest.filter(\n        col(\"num_bikes_available\") == col(\"capacity\")\n    )\n\n    stations_empty = latest.filter(\n        col(\"num_bikes_available\") == 0\n    )\n\n    # ============================\n    # WRITE MONGO\n    # ============================\n    write_to_mongo(kpi_totals, \"totals\")\n    write_to_mongo(top_full, \"top_full\")\n    write_to_mongo(top_empty, \"top_empty\")\n    write_to_mongo(top_ebikes, \"top_ebikes\")\n    write_to_mongo(stations_broken, \"stations_broken\")\n    write_to_mongo(stations_closed, \"stations_closed\")\n    write_to_mongo(stations_full, \"stations_full\")\n    write_to_mongo(stations_empty, \"stations_empty\")\n    write_to_mongo(stations_realtime, \"stations_realtime\")\n\n# ============================\n# START STREAMING\n# ============================\nquery = (\n    df.writeStream\n    .foreachBatch(process_realtime_kpi)\n    .outputMode(\"append\")\n    .start()\n)\n\nprint(\"⚡ Streaming Vélib corrigé — KPI temps réel cohérents → MongoDB\")\nspark.streams.awaitAnyTermination()
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/spark/spark_kpi_streaming.py b/spark/spark_kpi_streaming.py
+--- a/spark/spark_kpi_streaming.py	(revision fb4356418b1983573e9915925d9c6163bdba5e56)
++++ b/spark/spark_kpi_streaming.py	(date 1765533136192)
+@@ -61,7 +61,6 @@
+     if batch_df.isEmpty():
+         return
+ 
+-    # 🔑 1️⃣ Dernier état par station
+     latest = (
+         batch_df
+         .withColumn("ts", to_timestamp("timestamp"))
+@@ -161,5 +160,5 @@
+     .start()
+ )
+ 
+-print("⚡ Streaming Vélib corrigé — KPI temps réel cohérents → MongoDB")
++print("⚡ Streaming Vélib — KPI → MongoDB")
+ spark.streams.awaitAnyTermination()
+\ No newline at end of file

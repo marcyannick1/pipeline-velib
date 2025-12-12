@@ -8,7 +8,9 @@ import {
   getHourlyAvgBikes,
   getHourlyRate,
   getStationList,
-  getStationListById
+  getStationListById,
+  getStationEmptyFull,
+  getArrondissement
 } from "../controllers/statsController.js";
 
 const router = express.Router();
@@ -39,5 +41,11 @@ router.get("/station-list", getStationList);
 
 // GET /api/stats/station-list/:id
 router.get("/station-list/:id", getStationListById);
+
+// GET /api/stats/station-empty-full
+router.get("/station-empty-full", getStationEmptyFull);
+
+// GET /api/stats/arrondissement
+router.get("/arrondissement", getArrondissement);
 
 export default router;

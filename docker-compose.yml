@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # =========================
   # HDFS - Hadoop
@@ -162,6 +164,11 @@ services:
       - MONGO_INITDB_DATABASE=velibdb
     networks:
       - velib-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # =========================
   # BACKEND API
@@ -188,11 +195,14 @@ services:
     container_name: velib-ingestion
     depends_on:
       - namenode
+      - mongodb
     networks:
       - velib-net
     environment:
       - HDFS_URL=http://namenode:9870
       - FETCH_INTERVAL=60
+      - MONGO_URI=mongodb://mongodb:27017/velibdb
+      - USE_MONGODB=true
 
   # =========================
   # FRONTEND
@@ -215,6 +225,7 @@ services:
 
 networks:
   velib-net:
+    driver: bridge
 
 volumes:
   hadoop_namenode:
