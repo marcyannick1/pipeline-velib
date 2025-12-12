@@ -14,6 +14,7 @@ export const getTotals = async (req, res, next) => {
         total_mechanical: 0,
         total_ebike: 0,
         total_docks: 0,
+        active_stations: 0,
         occupancyRate: 0
       });
     }
@@ -23,6 +24,7 @@ export const getTotals = async (req, res, next) => {
       total_mechanical: Number(result.mechanical_available || 0),
       total_ebike: Number(result.ebikes_available || 0),
       total_docks: Number(result.free_slots || 0),
+      active_stations: Number(result.active_stations ?? result.activeStations ?? 0),
       occupancyRate: result.occupation_rate ? Math.round(result.occupation_rate * 100) : 0
     });
   } catch (error) {
