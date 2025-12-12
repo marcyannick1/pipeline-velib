@@ -7,7 +7,8 @@ import {
   getStationsBroken,
   getStationsClosed,
   getStationsFull,
-  getStationsEmpty
+  getStationsEmpty,
+  getRealtimeStations
 } from "../controllers/realtimeController.js";
 
 const router = express.Router();
@@ -35,5 +36,9 @@ router.get("/stations-full", getStationsFull);
 
 // GET /api/realtime/stations-empty
 router.get("/stations-empty", getStationsEmpty);
+
+// GET /api/realtime/stations
+// Toutes les stations en temps réel avec données d'occupation
+router.get("/stations", getRealtimeStations);
 
 export default router;

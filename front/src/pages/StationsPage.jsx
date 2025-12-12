@@ -5,7 +5,7 @@ import { StationMap } from '../components/StationMap';
 import { StatsCards } from '../components/StatsCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
-import { fetchStations, fetchGlobalStats } from '../api/velib';
+import { fetchRealtimeStations, fetchGlobalStats } from '../api/velib';
 import { MapPin, Table2, Map, Activity } from 'lucide-react';
 
 const StationsPage = () => {
@@ -18,7 +18,7 @@ const StationsPage = () => {
         const loadData = async () => {
             try {
                 const [stationsData, statsData] = await Promise.all([
-                    fetchStations(),
+                    fetchRealtimeStations(),
                     fetchGlobalStats()
                 ]);
                 setStations(stationsData);

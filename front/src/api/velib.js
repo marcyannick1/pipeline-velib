@@ -118,6 +118,11 @@ export const fetchStationsEmpty = async () => {
   return res.data;
 };
 
+export const fetchRealtimeStations = async () => {
+  const res = await axios.get(`${BASE_URL}/realtime/stations`);
+  return res.data;
+};
+
 // Aliases pour compatibilité avec les pages existantes
 export const fetchGlobalStats = async () => {
   const res = await axios.get(`${BASE_URL}/realtime/totals`);
