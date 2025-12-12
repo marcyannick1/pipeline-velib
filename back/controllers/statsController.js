@@ -144,6 +144,7 @@ export const getStationEmptyFull = async (req, res, next) => {
 
 export const getArrondissement = async (req, res, next) => {
   try {
+    // Utilise la collection arrondissement existante (compatible avec l'ancien format Power BI)
     const data = await mongoose.connection.db.collection('arrondissement').find().toArray();
     res.json(data);
   } catch (error) {
